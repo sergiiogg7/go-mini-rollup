@@ -132,7 +132,8 @@ func (d *Derivator) Step() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	d.m.Set("rollup_l1_head", float64(head))
+	d.m.Set(metrics.L1Head, float64(head))
+	defer d.publish(head)
 	next := d.cfg.L1Start
 	if d.st.cursor != nil {
 		next = d.st.cursor.Number + 1
@@ -193,7 +194,8 @@ func (d *Derivator) rewind() error {
 		if canonical {
 			d.restore(n, s)
 			d.reorgs++
-			d.m.Inc("rollup_reorg_total", "depth", fmt.Sprint(cur-n))
+			d.m.Inc(metrics.L1Reorgs)
+			d.m.Set(metrics.L1ReorgDepth, float64(cur-n))
 			return nil
 		}
 		if n == 0 {
@@ -231,12 +233,9 @@ func (d *Derivator) process(data *proto.L1BlockData) {
 			delete(d.snaps, k)
 		}
 	}
-	d.m.Set("rollup_safe_head", float64(d.st.head.Number()))
-	d.m.Set("rollup_l1_cursor", float64(ref.Number))
-	d.m.Set("rollup_next_epoch", float64(d.st.nextEpoch))
 }
 
-func (d *Derivator) reject(reason string) { d.m.Inc("rollup_batch_rejected_total", "reason", reason) }
+func (d *Derivator) reject(reason string) { d.m.Inc(metrics.BatchRejected, "reason", reason) }
 
 func (d *Derivator) handleBatch(ref proto.L1BlockRef, bt proto.BatchTx) {
 	if bt.From != d.cfg.Batcher {
@@ -269,7 +268,7 @@ func (d *Derivator) handleBatch(ref proto.L1BlockRef, bt proto.BatchTx) {
 		d.reject("origin_hash")
 	default:
 		d.st.cands[b.Epoch] = append(d.st.cands[b.Epoch], candidate{incl: ref.Number, batch: b})
-		d.m.Inc("rollup_batch_accepted_total")
+		d.m.Inc(metrics.BatchAccepted)
 	}
 }
 
@@ -301,7 +300,7 @@ func (d *Derivator) resolve(ref proto.L1BlockRef) {
 				return // a valid batch may still arrive
 			}
 			blocks = d.fallback(ei)
-			d.m.Inc("rollup_fallback_epochs_total")
+			d.m.Inc(metrics.FallbackEpochs)
 		}
 		for _, b := range blocks {
 			d.blocks = append(d.blocks, Derived{b, ref.Number})
@@ -333,12 +332,12 @@ func (d *Derivator) execute(b *proto.EpochBatch, ei epochInfo) []*proto.Block {
 		var txs []*gtypes.Transaction
 		for _, raw := range bb.Txs {
 			if len(raw) > p.MaxTxBytes {
-				d.m.Inc("rollup_tx_skipped_total", "reason", "too_large")
+				d.m.Inc(metrics.TxSkipped, "reason", "too_large")
 				continue
 			}
 			tx := new(gtypes.Transaction)
 			if err := tx.UnmarshalBinary(raw); err != nil {
-				d.m.Inc("rollup_tx_skipped_total", "reason", "undecodable")
+				d.m.Inc(metrics.TxSkipped, "reason", "undecodable")
 				continue
 			}
 			txs = append(txs, tx)
@@ -352,7 +351,7 @@ func (d *Derivator) execute(b *proto.EpochBatch, ei epochInfo) []*proto.Block {
 			panic(fmt.Sprintf("derivation: internal execution error: %v", err)) // never expected: bad input is skipped, not fatal
 		}
 		for range res.Skipped {
-			d.m.Inc("rollup_tx_skipped_total", "reason", "invalid")
+			d.m.Inc(metrics.TxSkipped, "reason", "invalid")
 		}
 		out = append(out, res.Block)
 		parent = res.Block
@@ -458,4 +457,19 @@ func (d *Derivator) BlockByHash(h common.Hash) *proto.Block {
 		}
 	}
 	return nil
+}
+
+// publish exports the heads and the lag after every Step, including the idle ones, so that a
+// derivation that stops advancing shows up as a growing lag instead of stale gauges. It is called
+// with d.mu held.
+func (d *Derivator) publish(l1Head uint64) {
+	cursor := d.cfg.L1Start - 1
+	if d.st.cursor != nil {
+		cursor = d.st.cursor.Number
+	}
+	d.m.Set(metrics.SafeHead, float64(d.st.head.Number()))
+	d.m.Set(metrics.FinalizedHead, float64(d.finalizedLocked()))
+	d.m.Set(metrics.L1Cursor, float64(cursor))
+	d.m.Set(metrics.NextEpoch, float64(d.st.nextEpoch))
+	d.m.Set(metrics.DerivationLag, float64(max(int64(l1Head)-int64(cursor), 0)))
 }

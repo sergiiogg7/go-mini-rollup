@@ -109,10 +109,10 @@ func (s *Sequencer) Submit(raw []byte) (common.Hash, error) {
 		return common.Hash{}, err
 	}
 	if err := s.pool.Add(tx, from, st.GetNonce(from), st.GetBalance(from).ToBig()); err != nil {
-		s.m.Inc("rollup_tx_rejected_total", "reason", err.Error())
+		s.m.Inc(metrics.TxRejected, "reason", poolRejectReason(err))
 		return common.Hash{}, err
 	}
-	s.m.Set("rollup_txpool_size", float64(s.pool.Len()))
+	s.m.Set(metrics.TxPoolSize, float64(s.pool.Len()))
 	return tx.Hash(), nil
 }
 
@@ -150,8 +150,8 @@ func (s *Sequencer) Tick() (int, error) {
 			produced++
 		}
 	}
-	s.m.Set("rollup_unsafe_head", float64(s.head().Number()))
-	s.m.Set("rollup_txpool_size", float64(s.pool.Len()))
+	s.m.Set(metrics.UnsafeHead, float64(s.head().Number()))
+	s.m.Set(metrics.TxPoolSize, float64(s.pool.Len()))
 	return produced, nil
 }
 
@@ -166,13 +166,15 @@ func (s *Sequencer) advanceEpoch() (bool, error) {
 		Number: parent.Number() + 1, Time: max(parent.Time()+1, data.Ref.Time), ParentHash: parent.Hash(),
 		OriginNumber: next, OriginHash: data.Ref.Hash, Deposits: data.Deposits,
 	}
+	start := time.Now()
 	res, err := s.ex.Execute(parent.Header.Root, in)
+	s.m.Observe(metrics.BlockBuild, time.Since(start).Seconds())
 	if err != nil {
 		return false, err
 	}
 	s.append(res.Block)
 	s.epoch, s.epochTime, s.inEpoch, s.closed = next, data.Ref.Time, 1, false
-	s.m.Inc("rollup_blocks_built_total", "kind", "epoch")
+	s.m.Inc(metrics.BlocksBuilt, "kind", "epoch")
 	return true, nil
 }
 
@@ -196,10 +198,12 @@ func (s *Sequencer) buildTxBlock() (bool, error) {
 	if len(txs) == 0 {
 		return false, nil
 	}
+	start := time.Now()
 	res, err := s.ex.Execute(root, exec.Input{
 		Number: parent.Number() + 1, Time: ts, ParentHash: parent.Hash(),
 		OriginNumber: s.epoch, OriginHash: parent.OriginHash, Txs: txs,
 	})
+	s.m.Observe(metrics.BlockBuild, time.Since(start).Seconds())
 	if err != nil {
 		return false, err
 	}
@@ -207,14 +211,14 @@ func (s *Sequencer) buildTxBlock() (bool, error) {
 		s.pool.Remove(t.Hash()) // included or skipped as invalid: either way it leaves the pool
 	}
 	for range res.Skipped {
-		s.m.Inc("rollup_tx_skipped_total", "reason", "sequencer")
+		s.m.Inc(metrics.TxSkipped, "reason", "sequencer")
 	}
 	if len(res.Block.Txs) == 0 {
 		return false, nil
 	}
 	s.append(res.Block)
 	s.inEpoch++
-	s.m.Inc("rollup_blocks_built_total", "kind", "tx")
+	s.m.Inc(metrics.BlocksBuilt, "kind", "tx")
 	return true, nil
 }
 
@@ -290,7 +294,7 @@ func (s *Sequencer) reconcileL1() error {
 	if n < uint64(len(s.chain)-1) {
 		s.truncate(n)
 		s.unsafeReorgs++
-		s.m.Inc("rollup_unsafe_reorg_total", "cause", "l1_reorg")
+		s.m.Inc(metrics.UnsafeReorgs, "cause", "l1_reorg")
 	}
 	return nil
 }
@@ -320,7 +324,7 @@ func (s *Sequencer) reconcileSafe() {
 			}
 			s.truncate(n - 1)
 			s.unsafeReorgs++
-			s.m.Inc("rollup_unsafe_reorg_total", "cause", "derivation_mismatch")
+			s.m.Inc(metrics.UnsafeReorgs, "cause", "derivation_mismatch")
 		}
 		s.append(sb) // the canonical block, already executed (shared executor)
 		s.verified = n
@@ -434,3 +438,22 @@ func (s *Sequencer) PoolNonce(a common.Address, stateNonce uint64) uint64 {
 
 // PoolSize is the number of pending transactions.
 func (s *Sequencer) PoolSize() int { return s.pool.Len() }
+
+// poolRejectReason maps a pool error to a bounded label value (metrics.TxRejectReasons).
+func poolRejectReason(err error) string {
+	switch {
+	case errors.Is(err, ErrKnown):
+		return "known"
+	case errors.Is(err, ErrNonceTooLow):
+		return "nonce_too_low"
+	case errors.Is(err, ErrNonceGap):
+		return "nonce_gap"
+	case errors.Is(err, ErrInsufficientFunds):
+		return "insufficient_funds"
+	case errors.Is(err, ErrPoolFull):
+		return "pool_full"
+	case errors.Is(err, ErrUnderpriced):
+		return "underpriced"
+	}
+	return "invalid"
+}

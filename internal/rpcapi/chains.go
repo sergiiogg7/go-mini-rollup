@@ -68,7 +68,7 @@ func (c *SeqChain) Status() map[string]any {
 		m["batcherNextEpoch"] = c.Bat.NextEpoch()
 	}
 	if c.Reg != nil {
-		m["batchesSubmitted"] = c.Reg.Get("rollup_batch_submitted_total")
+		m["batchesSubmitted"] = c.Reg.Get(metrics.BatchSubmitted)
 		m["batchesAccepted"] = c.Reg.Get("rollup_batch_accepted_total")
 		m["fallbackEpochs"] = c.Reg.Get("rollup_fallback_epochs_total")
 	}

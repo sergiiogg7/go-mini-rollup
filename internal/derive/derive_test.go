@@ -333,3 +333,33 @@ func TestFinalizedHeadLagsByFinalityDepth(t *testing.T) {
 	h.sync()
 	require.Greater(t, h.d.Finalized(), uint64(0))
 }
+
+func TestHeadsAndLagAreExportedAfterEveryStep(t *testing.T) {
+	h := newHarness(t)
+	h.l1.Mine(5)
+	ok, err := h.d.Step() // processes L1 block 1 only
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.EqualValues(t, 5, h.reg.Get(metrics.L1Head))
+	require.EqualValues(t, 1, h.reg.Get(metrics.L1Cursor))
+	require.EqualValues(t, 4, h.reg.Get(metrics.DerivationLag), "four L1 blocks still to process")
+	h.sync()
+	require.EqualValues(t, 0, h.reg.Get(metrics.DerivationLag))
+	require.EqualValues(t, 0, h.reg.Get(metrics.FinalizedHead))
+	h.l1.Mine(20)
+	h.sync()
+	require.EqualValues(t, h.d.SafeHead().Number(), h.reg.Get(metrics.SafeHead))
+	require.EqualValues(t, h.d.Finalized(), h.reg.Get(metrics.FinalizedHead))
+	require.Greater(t, h.reg.Get(metrics.FinalizedHead), float64(0))
+}
+
+func TestL1ReorgIsCountedWithItsDepth(t *testing.T) {
+	h := newHarness(t)
+	h.l1.Mine(6)
+	h.sync()
+	require.EqualValues(t, 0, h.reg.Get(metrics.L1Reorgs))
+	h.l1.Reorg(3, false)
+	h.sync()
+	require.EqualValues(t, 1, h.reg.Get(metrics.L1Reorgs))
+	require.EqualValues(t, 3, h.reg.Get(metrics.L1ReorgDepth))
+}

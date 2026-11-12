@@ -93,6 +93,7 @@ func run(log *slog.Logger, sequence bool, args []string) {
 	defer cl.Close()
 
 	reg := metrics.NewRegistry()
+	metrics.RegisterAll(reg)
 	p0 := cfg.Forks[0].Params
 	ex := exec.New(p0.ChainID, p0.GasLimit, cfg.FeeVault)
 	der, err := derive.New(cfg, ex, cl, reg)
@@ -120,11 +121,13 @@ func run(log *slog.Logger, sequence bool, args []string) {
 		chain = &rpcapi.SeqChain{Seq: seq, Der: der, L1: cl, Bat: bat, Reg: reg}
 		go every(ctx, 300*time.Millisecond, func() {
 			if _, err := seq.Tick(); err != nil {
+				reg.Inc(metrics.LoopErrors, "loop", "sequencer")
 				log.Warn("sequencer tick", "err", err)
 			}
 		})
 		go every(ctx, time.Second, func() {
 			if err := bat.Tick(); err != nil {
+				reg.Inc(metrics.LoopErrors, "loop", "batcher")
 				log.Warn("batcher tick", "err", err)
 			}
 		})
@@ -138,6 +141,7 @@ func run(log *slog.Logger, sequence bool, args []string) {
 				fatal("derivation", err)
 			}
 			if err != nil {
+				reg.Inc(metrics.LoopErrors, "loop", "derivation")
 				log.Warn("derivation step", "err", err)
 				return
 			}

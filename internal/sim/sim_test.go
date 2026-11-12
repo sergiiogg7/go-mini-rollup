@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	gtypes "github.com/ethereum/go-ethereum/core/types"
@@ -299,4 +300,47 @@ func TestForkActivatesAcrossTheWholePipeline(t *testing.T) {
 	}
 	require.EqualValues(t, 0, n.reg.Get("rollup_batch_rejected_total", "reason", "version"), "batcher switched format exactly at the fork")
 	require.Equal(t, "1000000000000000000", n.balanceAt(n.der.SafeHead(), bob))
+}
+
+func TestBlockBuildAndPoolMetrics(t *testing.T) {
+	n := newNode(t)
+	metrics.RegisterAll(n.reg)
+	n.rounds(2)
+	h, raw := n.tx(&carol, eth, nil, 21000)
+	_, err := n.seq.Submit(raw)
+	require.NoError(t, err)
+	_, err = n.seq.Submit(raw) // same transaction again
+	require.Error(t, err)
+	require.EqualValues(t, 1, n.reg.Get(metrics.TxRejected, "reason", "known"), "bounded label, not the error text")
+	require.EqualValues(t, 1, n.reg.Get(metrics.TxPoolSize))
+	n.rounds(6)
+	_, ok := n.seq.Tx(h)
+	require.True(t, ok)
+	require.EqualValues(t, 0, n.reg.Get(metrics.TxPoolSize))
+	require.Greater(t, n.reg.Count(metrics.BlockBuild), uint64(0))
+	require.Greater(t, n.reg.Get(metrics.BlocksBuilt, "kind", "tx"), float64(0))
+	require.Contains(t, n.reg.Render(), "rollup_block_build_seconds_bucket{le=\"+Inf\"}")
+	require.EqualValues(t, 0, n.reg.Get(metrics.FallbackEpochs), "counter exported at 0 before the first event")
+}
+
+func TestBatcherReportsInflightAgeWhileL1DoesNotConfirm(t *testing.T) {
+	n := newNode(t)
+	clock := time.Unix(1_700_000_000, 0)
+	n.bat.Now = func() time.Time { return clock }
+	n.rounds(2)
+	n.send(carol, eth)
+	n.l1.Mine(1)
+	_, _ = n.seq.Tick()
+	n.l1.Mine(1)
+	_, _ = n.seq.Tick()
+	require.NoError(t, n.bat.Tick()) // sent, L1 stops mining: it stays in the pool
+	require.EqualValues(t, 0, n.reg.Get(metrics.BatcherOldestAge))
+	require.Greater(t, n.reg.Get(metrics.BatcherInflight), float64(0))
+	clock = clock.Add(90 * time.Second)
+	require.NoError(t, n.bat.Tick())
+	require.EqualValues(t, 90, n.reg.Get(metrics.BatcherOldestAge))
+	n.l1.Mine(1) // the batches get included
+	require.NoError(t, n.bat.Tick())
+	require.EqualValues(t, 0, n.reg.Get(metrics.BatcherOldestAge))
+	require.EqualValues(t, 0, n.reg.Get(metrics.BatcherInflight))
 }

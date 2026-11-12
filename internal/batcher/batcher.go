@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	gtypes "github.com/ethereum/go-ethereum/core/types"
@@ -46,6 +47,7 @@ type tracked struct {
 	gasPrice *big.Int
 	incl     *proto.TxInclusion // nil while not in a block
 	age      int                // ticks since the last (re)send without inclusion
+	sentAt   time.Time          // first send, or the moment an L1 reorg dropped it again (fee bumps keep it)
 }
 
 // Batcher is driven by Tick (no goroutines inside, easy to test).
@@ -61,6 +63,7 @@ type Batcher struct {
 	MaxInflight   int
 	Confirmations uint64 // blocks on top of the inclusion block before a batch stops counting as in flight
 	BumpAfter     int    // ticks without inclusion before replacing with a higher fee
+	Now           func() time.Time
 
 	started   bool
 	nextEpoch uint64
@@ -75,7 +78,7 @@ func New(cfg *proto.Config, src UnsafeSource, l1 derive.L1Source, sub L1Submitte
 	}
 	return &Batcher{
 		cfg: cfg, src: src, l1: l1, sub: sub, key: key, addr: crypto.PubkeyToAddress(key.PublicKey), m: m,
-		MaxInflight: 4, Confirmations: 1, BumpAfter: 5,
+		MaxInflight: 4, Confirmations: 1, BumpAfter: 5, Now: time.Now,
 	}
 }
 
@@ -127,7 +130,7 @@ func (b *Batcher) Tick() error {
 		return err
 	}
 	if err := b.track(head); err != nil {
-		b.m.Inc("rollup_batcher_errors_total", "stage", "track")
+		b.m.Inc(metrics.BatcherErrors, "stage", "track")
 		return err
 	}
 	for len(b.inflight) < b.MaxInflight {
@@ -136,13 +139,14 @@ func (b *Batcher) Tick() error {
 			break
 		}
 		if err := b.submit(d); err != nil {
-			b.m.Inc("rollup_batcher_errors_total", "stage", "submit")
+			b.m.Inc(metrics.BatcherErrors, "stage", "submit")
 			return err
 		}
 		b.nextEpoch++
 	}
-	b.m.Set("rollup_batcher_next_epoch", float64(b.nextEpoch))
-	b.m.Set("rollup_batcher_inflight", float64(len(b.inflight)))
+	b.m.Set(metrics.BatcherNextEpoch, float64(b.nextEpoch))
+	b.m.Set(metrics.BatcherInflight, float64(len(b.inflight)))
+	b.m.Set(metrics.BatcherOldestAge, b.oldestUnincludedAge().Seconds())
 	return nil
 }
 
@@ -195,7 +199,7 @@ func (b *Batcher) submit(d *proto.Draft) error {
 	if err != nil {
 		return err
 	}
-	t := &tracked{epoch: d.Epoch, data: data, nonce: b.nonce, gasPrice: price}
+	t := &tracked{epoch: d.Epoch, data: data, nonce: b.nonce, gasPrice: price, sentAt: b.Now()}
 	if err := b.send(t); err != nil {
 		if !nonceError(err) {
 			return err
@@ -213,7 +217,7 @@ func (b *Batcher) submit(d *proto.Draft) error {
 	}
 	b.nonce = t.nonce + 1
 	b.inflight = append(b.inflight, t)
-	b.m.Inc("rollup_batch_submitted_total")
+	b.m.Inc(metrics.BatchSubmitted)
 	return nil
 }
 
@@ -241,8 +245,9 @@ func (b *Batcher) track(head uint64) error {
 		case r == nil && t.incl != nil: // the block that held it left the canonical chain
 			t.incl = nil
 			t.age = 0
+			t.sentAt = b.Now()
 			reorged = true
-			b.m.Inc("rollup_batcher_resubmitted_total", "cause", "l1_reorg")
+			b.m.Inc(metrics.BatcherResubmit, "cause", "l1_reorg")
 		case r == nil:
 			t.age++
 		default:
@@ -265,10 +270,10 @@ func (b *Batcher) track(head uint64) error {
 					if err := b.rebase(all); err != nil {
 						return err
 					}
-					b.m.Inc("rollup_batcher_resubmitted_total", "cause", "nonce_rebase")
+					b.m.Inc(metrics.BatcherResubmit, "cause", "nonce_rebase")
 					break
 				}
-				b.m.Inc("rollup_batcher_resubmitted_total", "cause", "fee_bump")
+				b.m.Inc(metrics.BatcherResubmit, "cause", "fee_bump")
 			}
 		}
 	}
@@ -307,3 +312,15 @@ func (b *Batcher) rebase(all []*tracked) error {
 
 // NextEpoch is the next epoch the batcher will publish.
 func (b *Batcher) NextEpoch() uint64 { return b.nextEpoch }
+
+// oldestUnincludedAge is how long the oldest batch that is not in an L1 block has been waiting.
+func (b *Batcher) oldestUnincludedAge() time.Duration {
+	var oldest time.Duration
+	now := b.Now()
+	for _, t := range b.inflight {
+		if t.incl == nil {
+			oldest = max(oldest, now.Sub(t.sentAt))
+		}
+	}
+	return oldest
+}
