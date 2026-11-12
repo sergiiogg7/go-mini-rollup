@@ -1,0 +1,7 @@
+bin/
+.demo/
+.demo-run.log
+contracts/out/
+contracts/cache/
+contracts/lib/
+*.out
