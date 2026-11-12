@@ -1,7 +1,7 @@
 # Demo output
 
 Real output of `scripts/demo.sh` (recorded 2026-11-12, Windows 10 + Git Bash, Go 1.27.4, Foundry 1.7.1, go-ethereum v1.17.10 as a library, Anvil as L1 with 1 s blocks).
-Every step is executed for real; nothing is mocked. Addresses and hashes change between runs.
+Every step is executed for real; nothing is mocked. Addresses and hashes change between runs. Step 7 was re-recorded from a later run (same day) after the metrics were extended; see [OBSERVABILITY.md](OBSERVABILITY.md) for the Prometheus and Grafana side.
 
 What each step proves:
 
@@ -55,15 +55,15 @@ Bob on L2 after the reorg: 1.000000000000000000 ETH   (the unsafe mint was rolle
 After the reorg both nodes still agree on block 8: 0x80981391b1b0216a22baf1fc7cc8c3636b1d4970f0d8d98371ba5d6ea8eb3202
 
 ==> 7. Metrics (Prometheus format)
-# TYPE rollup_batch_accepted_total counter
-rollup_batch_accepted_total 14
-# TYPE rollup_batch_submitted_total counter
+rollup_batch_accepted_total 16
 rollup_batch_submitted_total 13
-# TYPE rollup_reorg_total counter
-rollup_reorg_total{depth="4"} 1
-# TYPE rollup_safe_head gauge
-rollup_safe_head 15
-# TYPE rollup_unsafe_reorg_total counter
+rollup_derivation_lag_l1_blocks 0
+rollup_fallback_epochs_total 0
+rollup_finalized_head 0
+rollup_l1_reorg_last_depth 4
+rollup_l1_reorg_total 1
+rollup_safe_head 16
+rollup_unsafe_reorg_total{cause="derivation_mismatch"} 1
 rollup_unsafe_reorg_total{cause="l1_reorg"} 1
 
 ==> Done. Stopping everything.

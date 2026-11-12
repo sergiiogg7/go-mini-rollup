@@ -1,0 +1,44 @@
+# Failure C: two L1 reorgs within 10 minutes (anvil_reorg), alert ReorgSpike = increase(rollup_l1_reorg_total[10m]) >= 2
+17:28:02 baseline
+17:28:02 alerts=[] l1_head=445 safe=443 inflight=2 oldest_s=0.0020694 fallback_inc1m=0 batch_err_inc1m=0
+17:28:06 alerts=[] l1_head=450 safe=449 inflight=0 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:28:10 >>> cast rpc anvil_reorg 2 []
+17:28:10 alerts=[] l1_head=450 safe=449 inflight=0 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:28:21 alerts=[] l1_head=465 safe=464 inflight=0 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:28:32 >>> cast rpc anvil_reorg 2 []
+17:28:32 alerts=[] l1_head=475 safe=473 inflight=2 oldest_s=0.001026 fallback_inc1m=0 batch_err_inc1m=0
+17:28:43 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=485 safe=484 inflight=0 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:28:53 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=495 safe=493 inflight=2 oldest_s=0.0009992 fallback_inc1m=0 batch_err_inc1m=0
+17:29:14 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=515 safe=513 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:29:34 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=535 safe=533 inflight=2 oldest_s=0.000523 fallback_inc1m=0 batch_err_inc1m=0
+17:29:55 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=555 safe=553 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:30:16 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=575 safe=573 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:30:36 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=600 safe=598 inflight=2 oldest_s=0.0010857 fallback_inc1m=0 batch_err_inc1m=0
+17:30:57 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=620 safe=618 inflight=2 oldest_s=0.0007505 fallback_inc1m=0 batch_err_inc1m=0
+17:31:17 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=640 safe=638 inflight=2 oldest_s=0.0005098 fallback_inc1m=0 batch_err_inc1m=0
+17:31:38 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=660 safe=658 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:31:59 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=680 safe=678 inflight=2 oldest_s=0.0010007 fallback_inc1m=0 batch_err_inc1m=0
+17:32:19 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=700 safe=698 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:32:39 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=720 safe=718 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:33:00 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=740 safe=738 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:33:20 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=760 safe=758 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:33:41 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=780 safe=778 inflight=2 oldest_s=0.0005105 fallback_inc1m=0 batch_err_inc1m=0
+17:34:02 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=805 safe=803 inflight=2 oldest_s=0.0005115 fallback_inc1m=0 batch_err_inc1m=0
+17:34:22 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=825 safe=823 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:34:43 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=845 safe=844 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:35:05 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=865 safe=863 inflight=2 oldest_s=0.0010007 fallback_inc1m=0 batch_err_inc1m=0
+17:35:26 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=885 safe=883 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:35:46 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=910 safe=908 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:36:07 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=930 safe=928 inflight=2 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:36:27 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=950 safe=948 inflight=2 oldest_s=1.0020001 fallback_inc1m=0 batch_err_inc1m=0
+17:36:48 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=970 safe=969 inflight=1 oldest_s=0.0006235 fallback_inc1m=0 batch_err_inc1m=0
+17:37:08 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=990 safe=989 inflight=1 oldest_s=0.0007139 fallback_inc1m=0 batch_err_inc1m=0
+17:37:29 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=1010 safe=1009 inflight=1 oldest_s=0.0010227 fallback_inc1m=0 batch_err_inc1m=0
+17:37:49 alerts=[ReorgSpike firing ReorgSpike firing] l1_head=1030 safe=1029 inflight=1 oldest_s=0.0005088 fallback_inc1m=0 batch_err_inc1m=0
+17:38:10 alerts=[ReorgSpike firing] l1_head=1050 safe=1049 inflight=1 oldest_s=0.0000084 fallback_inc1m=0 batch_err_inc1m=0
+17:38:31 alerts=[] l1_head=1070 safe=1069 inflight=1 oldest_s=0.0006008 fallback_inc1m=0 batch_err_inc1m=0
+17:38:51 alerts=[] l1_head=1090 safe=1094 inflight=1 oldest_s=0.0005114 fallback_inc1m=0 batch_err_inc1m=0
+17:39:12 alerts=[] l1_head=1115 safe=1114 inflight=1 oldest_s=0.0010123 fallback_inc1m=0 batch_err_inc1m=0
+17:39:32 alerts=[] l1_head=1135 safe=1134 inflight=1 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:39:53 alerts=[] l1_head=1155 safe=1154 inflight=1 oldest_s=0.000654 fallback_inc1m=0 batch_err_inc1m=0
+17:40:13 alerts=[] l1_head=1175 safe=1174 inflight=1 oldest_s=0.0005083 fallback_inc1m=0 batch_err_inc1m=0

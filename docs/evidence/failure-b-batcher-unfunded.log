@@ -1,0 +1,38 @@
+# Failure B (re-run with the final rules): the batcher account runs out of L1 funds -> batches stop -> epochs fall back to empty blocks
+17:41:30 baseline
+17:41:31 alerts=[] l1_head=1250 safe=1249 inflight=1 oldest_s=0.0008565 fallback_inc1m=0 batch_err_inc1m=0
+17:41:34 alerts=[] l1_head=1255 safe=1254 inflight=1 oldest_s=0.0015255 fallback_inc1m=0 batch_err_inc1m=0
+17:41:38 >>> cast rpc anvil_setBalance 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 0x0
+null
+17:41:39 alerts=[] l1_head=1260 safe=1259 inflight=1 oldest_s=0.0005759 fallback_inc1m=0 batch_err_inc1m=0
+17:41:50 alerts=[BatcherErrors(sequencer):pending FallbackEpochsIncreasing(sequencer):pending] l1_head=1270 safe=1264 inflight=1 oldest_s=0.0010448 fallback_inc1m=2.1818181818181817 batch_err_inc1m=7.636363636363636
+17:42:00 alerts=[BatcherErrors(sequencer):pending FallbackEpochsIncreasing(sequencer):pending FallbackEpochsIncreasing(verifier):pending] l1_head=1280 safe=1274 inflight=1 oldest_s=0.0010448 fallback_inc1m=13.09090909090909 batch_err_inc1m=18.545454545454543
+17:42:11 alerts=[BatcherErrors(sequencer):pending FallbackEpochsIncreasing(sequencer):pending FallbackEpochsIncreasing(verifier):pending] l1_head=1290 safe=1284 inflight=1 oldest_s=0.0010448 fallback_inc1m=29.454545454545453 batch_err_inc1m=34.90909090909091
+17:42:22 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1305 safe=1299 inflight=1 oldest_s=0.0010448 fallback_inc1m=40.36363636363636 batch_err_inc1m=45.81818181818181
+17:42:32 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1315 safe=1309 inflight=1 oldest_s=0.0010448 fallback_inc1m=51.272727272727266 batch_err_inc1m=56.72727272727272
+17:42:43 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1325 safe=1319 inflight=1 oldest_s=0.0010448 fallback_inc1m=59.99999999999999 batch_err_inc1m=59.99999999999999
+17:42:53 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1335 safe=1329 inflight=1 oldest_s=0.0010448 fallback_inc1m=59.99999999999999 batch_err_inc1m=59.99999999999999
+17:43:04 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1345 safe=1339 inflight=1 oldest_s=0.0010448 fallback_inc1m=59.99999999999999 batch_err_inc1m=59.99999999999999
+17:43:14 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1355 safe=1349 inflight=1 oldest_s=0.0010448 fallback_inc1m=59.99999999999999 batch_err_inc1m=59.99999999999999
+17:43:25 >>> cast rpc anvil_setBalance 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 0x21e19e0c9bab2400000 (10000 ETH)
+null
+17:43:25 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1365 safe=1359 inflight=1 oldest_s=0.0010448 fallback_inc1m=59.99999999999999 batch_err_inc1m=59.99999999999999
+17:43:35 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1375 safe=1369 inflight=4 oldest_s=0.0040069 fallback_inc1m=59.99999999999999 batch_err_inc1m=53.45454545454545
+17:43:46 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1385 safe=1379 inflight=4 oldest_s=0.004001 fallback_inc1m=59.99999999999999 batch_err_inc1m=42.54545454545454
+17:43:56 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1400 safe=1394 inflight=4 oldest_s=0.0030005 fallback_inc1m=59.99999999999999 batch_err_inc1m=26.18181818181818
+17:44:07 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1410 safe=1409 inflight=1 oldest_s=0 fallback_inc1m=51.272727272727266 batch_err_inc1m=15.272727272727272
+17:44:17 alerts=[BatcherErrors(sequencer):firing FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1420 safe=1419 inflight=1 oldest_s=0.0005385 fallback_inc1m=40.36363636363636 batch_err_inc1m=4.363636363636363
+17:44:28 alerts=[FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1430 safe=1429 inflight=1 oldest_s=0.0005096 fallback_inc1m=29.454545454545453 batch_err_inc1m=0
+17:44:39 alerts=[FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1440 safe=1439 inflight=1 oldest_s=0.0010272 fallback_inc1m=18.545454545454543 batch_err_inc1m=0
+17:44:50 alerts=[FallbackEpochsIncreasing(sequencer):firing FallbackEpochsIncreasing(verifier):firing] l1_head=1450 safe=1449 inflight=1 oldest_s=0.0010003 fallback_inc1m=7.636363636363636 batch_err_inc1m=0
+17:45:01 alerts=[FallbackEpochsIncreasing(verifier):firing] l1_head=1460 safe=1459 inflight=1 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+17:45:11 alerts=[] l1_head=1475 safe=1474 inflight=1 oldest_s=0.0010003 fallback_inc1m=0 batch_err_inc1m=0
+17:45:22 alerts=[] l1_head=1485 safe=1484 inflight=1 oldest_s=0.000594 fallback_inc1m=0 batch_err_inc1m=0
+17:45:32 alerts=[] l1_head=1495 safe=1494 inflight=1 oldest_s=0 fallback_inc1m=0 batch_err_inc1m=0
+# counters at the end:
+rollup_batch_accepted_total 1220
+rollup_batch_rejected_total{reason="late"} 0
+rollup_batch_rejected_total{reason="stale_epoch"} 289
+rollup_batcher_errors_total{stage="submit"} 228
+rollup_batcher_errors_total{stage="track"} 0
+rollup_fallback_epochs_total 289

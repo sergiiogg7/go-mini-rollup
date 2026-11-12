@@ -1,0 +1,38 @@
+[
+  {
+    alertname: 'BatcherErrors',
+    job: 'rollup-sequencer',
+    severity: 'warning',
+    state: 'firing',
+    activeAt: '2026-11-12T17:23:36.839975037Z',
+    value: '5.999999999999999e+01',
+    summary: 'The batcher fails (submit)'
+  },
+  {
+    alertname: 'FallbackEpochsIncreasing',
+    job: 'rollup-sequencer',
+    severity: 'critical',
+    state: 'firing',
+    activeAt: '2026-11-12T17:23:41.839975037Z',
+    value: '5.999999999999999e+01',
+    summary: 'rollup-sequencer: epochs are being derived as empty fallback blocks'
+  },
+  {
+    alertname: 'FallbackEpochsIncreasing',
+    job: 'rollup-verifier',
+    severity: 'critical',
+    state: 'firing',
+    activeAt: '2026-11-12T17:23:46.839975037Z',
+    value: '5.999999999999999e+01',
+    summary: 'rollup-verifier: epochs are being derived as empty fallback blocks'
+  },
+  {
+    alertname: 'L1Unreachable',
+    job: 'rollup-sequencer',
+    severity: 'critical',
+    state: 'firing',
+    activeAt: '2026-11-12T17:23:41.839975037Z',
+    value: '5.999999999999999e+01',
+    summary: 'rollup-sequencer: background loops keep failing'
+  }
+]

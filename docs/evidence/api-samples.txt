@@ -1,0 +1,336 @@
+# Real API output from the live stack (Prometheus 3.16.0, Grafana 13.3.1), trimmed. Captured 2026-11-12T17:45:39Z
+
+## GET http://127.0.0.1:29090/api/v1/targets
+[
+ {
+  "job": "rollup-sequencer",
+  "instance": "127.0.0.1:29545",
+  "health": "up",
+  "scrapeUrl": "http://127.0.0.1:29545/metrics",
+  "lastScrape": "2026-11-12T17:45:36.6978377Z",
+  "lastScrapeDurationSeconds": 0,
+  "lastError": ""
+ },
+ {
+  "job": "rollup-verifier",
+  "instance": "127.0.0.1:29546",
+  "health": "up",
+  "scrapeUrl": "http://127.0.0.1:29546/metrics",
+  "lastScrape": "2026-11-12T17:45:38.0582713Z",
+  "lastScrapeDurationSeconds": 0.0005466,
+  "lastError": ""
+ }
+]
+
+## GET http://127.0.0.1:29090/api/v1/rules
+[
+ {
+  "name": "RollupNodeDown",
+  "state": "inactive",
+  "health": "ok",
+  "for": 30,
+  "expr": "up{job=~\"rollup-.*\"} == 0"
+ },
+ {
+  "name": "SafeHeadStalled",
+  "state": "inactive",
+  "health": "ok",
+  "for": 60,
+  "expr": "increase(rollup_safe_head[2m]) == 0 and increase(rollup_l1_head[2m]) > 0"
+ },
+ {
+  "name": "DerivationLagHigh",
+  "state": "inactive",
+  "health": "ok",
+  "for": 60,
+  "expr": "rollup_derivation_lag_l1_blocks > 10"
+ },
+ {
+  "name": "BatcherStuck",
+  "state": "inactive",
+  "health": "ok",
+  "for": 30,
+  "expr": "rollup_batcher_inflight > 0 and rollup_batcher_oldest_inflight_seconds > 60"
+ },
+ {
+  "name": "BatcherErrors",
+  "state": "inactive",
+  "health": "ok",
+  "for": 30,
+  "expr": "increase(rollup_batcher_errors_total[1m]) > 0"
+ },
+ {
+  "name": "FallbackEpochsIncreasing",
+  "state": "inactive",
+  "health": "ok",
+  "for": 30,
+  "expr": "increase(rollup_fallback_epochs_total[1m]) > 0"
+ },
+ {
+  "name": "ReorgSpike",
+  "state": "inactive",
+  "health": "ok",
+  "for": 0,
+  "expr": "increase(rollup_l1_reorg_total[10m]) >= 2"
+ },
+ {
+  "name": "L1Unreachable",
+  "state": "inactive",
+  "health": "ok",
+  "for": 30,
+  "expr": "sum by (job) (increase(rollup_loop_errors_total{loop=~\"derivation|sequencer\"}[1m])) > 5"
+ }
+]
+
+## GET /api/v1/query?query=rollup_safe_head
+[
+ {
+  "metric": {
+   "__name__": "rollup_safe_head",
+   "instance": "127.0.0.1:29546",
+   "job": "rollup-verifier"
+  },
+  "value": [
+   1794505539.592,
+   "1500"
+  ]
+ },
+ {
+  "metric": {
+   "__name__": "rollup_safe_head",
+   "instance": "127.0.0.1:29545",
+   "job": "rollup-sequencer"
+  },
+  "value": [
+   1794505539.592,
+   "1499"
+  ]
+ }
+]
+
+## GET /api/v1/query?query=rollup_derivation_lag_l1_blocks
+[
+ {
+  "metric": {
+   "__name__": "rollup_derivation_lag_l1_blocks",
+   "instance": "127.0.0.1:29546",
+   "job": "rollup-verifier"
+  },
+  "value": [
+   1794505539.676,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "__name__": "rollup_derivation_lag_l1_blocks",
+   "instance": "127.0.0.1:29545",
+   "job": "rollup-sequencer"
+  },
+  "value": [
+   1794505539.676,
+   "0"
+  ]
+ }
+]
+
+## GET /api/v1/query?query=rollup_finalized_head
+[
+ {
+  "metric": {
+   "__name__": "rollup_finalized_head",
+   "instance": "127.0.0.1:29546",
+   "job": "rollup-verifier"
+  },
+  "value": [
+   1794505539.756,
+   "1488"
+  ]
+ },
+ {
+  "metric": {
+   "__name__": "rollup_finalized_head",
+   "instance": "127.0.0.1:29545",
+   "job": "rollup-sequencer"
+  },
+  "value": [
+   1794505539.756,
+   "1487"
+  ]
+ }
+]
+
+## GET /api/v1/query?query=histogram_quantile(0.95, sum by (le) (rate(rollup_block_build_seconds_bucket[1m])))
+[
+ {
+  "metric": {},
+  "value": [
+   1794505539.842,
+   "0.0008472222222222222"
+  ]
+ }
+]
+
+## GET /api/v1/query?query=sum by (reason) (increase(rollup_batch_rejected_total[5m]))
+[
+ {
+  "metric": {
+   "reason": "block_count"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "decode"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "future_epoch"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "late"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "origin_hash"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "sender"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "stale_epoch"
+  },
+  "value": [
+   1794505539.932,
+   "272.5423728813559"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "timestamps"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ },
+ {
+  "metric": {
+   "reason": "version"
+  },
+  "value": [
+   1794505539.932,
+   "0"
+  ]
+ }
+]
+
+## GET http://127.0.0.1:23000/api/health
+{
+  "database": "ok",
+  "version": "13.3.1",
+  "commit": "da3aa3ff574e7dbbf808c66b6daa744defed0441"
+}
+## GET http://127.0.0.1:23000/api/search?query=go-mini-rollup
+[{"id":4237371415851008,"uid":"go-mini-rollup","orgId":1,"title":"go-mini-rollup","uri":"db/go-mini-rollup","url":"/d/go-mini-rollup/go-mini-rollup","slug":"","type":"dash-db","tags":["go-mini-rollup","rollup"],"isStarred":false,"sortMeta":0,"isDeleted":false}]
+## GET http://127.0.0.1:23000/api/datasources
+[{"id":1,"uid":"prometheus","orgId":1,"name":"Prometheus","type":"prometheus","typeName":"Prometheus","typeLogoUrl":"public/plugins/prometheus/img/prometheus_logo.svg","access":"proxy","url":"http://127.0.0.1:29090","user":"","database":"","basicAuth":false,"isDefault":true,"jsonData":{},"readOnly":true}]
+## GET http://127.0.0.1:23000/api/datasources/proxy/uid/prometheus/api/v1/query?query=rollup_safe_head  (Grafana -> Prometheus)
+[
+ {
+  "metric": {
+   "__name__": "rollup_safe_head",
+   "instance": "127.0.0.1:29546",
+   "job": "rollup-verifier"
+  },
+  "value": [
+   1794505540.155,
+   "1500"
+  ]
+ },
+ {
+  "metric": {
+   "__name__": "rollup_safe_head",
+   "instance": "127.0.0.1:29545",
+   "job": "rollup-sequencer"
+  },
+  "value": [
+   1794505540.155,
+   "1499"
+  ]
+ }
+]
+
+## GET http://127.0.0.1:23000/api/dashboards/uid/go-mini-rollup  (panel titles)
+{
+ "provisioned": true,
+ "provisionedExternalId": "rollup.json",
+ "panels": 17,
+ "titles": [
+  "Safe head",
+  "Finalized head",
+  "Unsafe head",
+  "L1 head",
+  "Derivation lag (L1 blocks)",
+  "Tx pool",
+  "Heads (unsafe, safe, finalized, L1)",
+  "Derivation lag (L1 blocks behind the L1 head)",
+  "Batcher: in flight and age of the oldest unincluded batch",
+  "Batcher: sends, resubmissions and errors (per minute)",
+  "Batches accepted / rejected by reason (per minute)",
+  "Fallback epochs (empty blocks, per minute)",
+  "Reorgs (per 5 minutes)",
+  "Block build time (sequencer, EVM execution)",
+  "Tx pool size and rejected / skipped transactions",
+  "Blocks built and loop errors (per minute)",
+  "Alerts (pending or firing, from Prometheus)"
+ ]
+}
+
+## POST http://127.0.0.1:23000/api/ds/query  (the query path the dashboard panels use)
+{
+ "status": 200,
+ "fields": [
+  "Time",
+  "rollup_safe_head"
+ ],
+ "values": [
+  [
+   1794505547380
+  ],
+  [
+   1509
+  ]
+ ]
+}

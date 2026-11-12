@@ -1,0 +1,50 @@
+OK   target rollup-sequencer   http://127.0.0.1:29545/metrics health=up
+OK   target rollup-verifier    http://127.0.0.1:29546/metrics health=up
+OK   at least one target is configured
+OK   rule  RollupNodeDown             health=ok state=inactive
+OK   rule  SafeHeadStalled            health=ok state=inactive
+OK   rule  DerivationLagHigh          health=ok state=inactive
+OK   rule  BatcherStuck               health=ok state=inactive
+OK   rule  BatcherErrors              health=ok state=inactive
+OK   rule  FallbackEpochsIncreasing   health=ok state=inactive
+OK   rule  ReorgSpike                 health=ok state=inactive
+OK   rule  L1Unreachable              health=ok state=inactive
+OK   8 alert rules loaded (expected 8)
+OK   panel Safe head                                                      series=1  rollup_safe_head{job="rollup-sequencer"}
+OK   panel Finalized head                                                 series=1  rollup_finalized_head{job="rollup-sequencer"}
+OK   panel Unsafe head                                                    series=1  rollup_unsafe_head{job="rollup-sequencer"}
+OK   panel L1 head                                                        series=1  rollup_l1_head{job="rollup-sequencer"}
+OK   panel Derivation lag (L1 blocks)                                     series=1  max(rollup_derivation_lag_l1_blocks)
+OK   panel Tx pool                                                        series=1  rollup_txpool_size{job="rollup-sequencer"}
+OK   panel Heads (unsafe, safe, finalized, L1)                            series=1  rollup_unsafe_head{job="rollup-sequencer"}
+OK   panel Heads (unsafe, safe, finalized, L1)                            series=1  rollup_safe_head{job="rollup-sequencer"}
+OK   panel Heads (unsafe, safe, finalized, L1)                            series=1  rollup_safe_head{job="rollup-verifier"}
+OK   panel Heads (unsafe, safe, finalized, L1)                            series=1  rollup_finalized_head{job="rollup-sequencer"}
+OK   panel Heads (unsafe, safe, finalized, L1)                            series=1  rollup_l1_head{job="rollup-sequencer"}
+OK   panel Derivation lag (L1 blocks behind the L1 head)                  series=2  rollup_derivation_lag_l1_blocks
+OK   panel Batcher: in flight and age of the oldest unincluded batch      series=1  rollup_batcher_inflight
+OK   panel Batcher: in flight and age of the oldest unincluded batch      series=1  rollup_batcher_oldest_inflight_seconds
+OK   panel Batcher: sends, resubmissions and errors (per minute)          series=2  increase(rollup_batch_submitted_total[1m])
+OK   panel Batcher: sends, resubmissions and errors (per minute)          series=3  sum by (cause) (increase(rollup_batcher_resubmitted_total[1m]))
+OK   panel Batcher: sends, resubmissions and errors (per minute)          series=2  sum by (stage) (increase(rollup_batcher_errors_total[1m]))
+OK   panel Batches accepted / rejected by reason (per minute)             series=2  increase(rollup_batch_accepted_total[1m])
+OK   panel Batches accepted / rejected by reason (per minute)             series=18  sum by (job, reason) (increase(rollup_batch_rejected_total[1m]))
+OK   panel Fallback epochs (empty blocks, per minute)                     series=2  increase(rollup_fallback_epochs_total[1m])
+OK   panel Reorgs (per 5 minutes)                                         series=2  increase(rollup_l1_reorg_total[5m])
+OK   panel Reorgs (per 5 minutes)                                         series=2  sum by (cause) (increase(rollup_unsafe_reorg_total[5m]))
+OK   panel Reorgs (per 5 minutes)                                         series=2  rollup_l1_reorg_last_depth
+OK   panel Block build time (sequencer, EVM execution)                    series=1  histogram_quantile(0.50, sum by (le) (rate(rollup_block_build_seconds_
+OK   panel Block build time (sequencer, EVM execution)                    series=1  histogram_quantile(0.95, sum by (le) (rate(rollup_block_build_seconds_
+OK   panel Block build time (sequencer, EVM execution)                    series=1  histogram_quantile(0.99, sum by (le) (rate(rollup_block_build_seconds_
+OK   panel Tx pool size and rejected / skipped transactions               series=1  rollup_txpool_size
+OK   panel Tx pool size and rejected / skipped transactions               series=7  sum by (reason) (increase(rollup_tx_rejected_total[1m]))
+OK   panel Tx pool size and rejected / skipped transactions               series=8  sum by (job, reason) (increase(rollup_tx_skipped_total[1m]))
+OK   panel Blocks built and loop errors (per minute)                      series=2  sum by (kind) (increase(rollup_blocks_built_total[1m]))
+OK   panel Blocks built and loop errors (per minute)                      series=6  sum by (job, loop) (increase(rollup_loop_errors_total[1m]))
+OK   panel Alerts (pending or firing, from Prometheus)                    series=0  ALERTS{alertstate=~"firing|pending"}
+OK   grafana health database=ok
+OK   grafana dashboard "go-mini-rollup" provisioned: [{go-mini-rollup go-mini-rollup}]
+OK   grafana datasource provisioned: [{Prometheus prometheus prometheus http://127.0.0.1:29090}]
+OK   grafana -> prometheus query rollup_safe_head series=2 err=<nil>
+
+all checks passed
