@@ -14,7 +14,7 @@
 
 ## What the tests check (adversarial)
 
-Named tests in `internal/derive/derive_test.go`, `internal/proto/proto_test.go`, `internal/sim/sim_test.go`: non-batcher sender, garbage bytes, decompression bomb, future epoch, wrong version, zero or too many blocks, timestamp before the epoch / beyond the drift / not increasing, duplicate batches, invalid transactions inside a valid batch, wrong origin hash after the fork, L1 reorgs of random shape, derivation overriding the sequencer, batcher outage longer than the window, stuck batcher transaction, restart with no state, fork boundary with an un-upgraded node. `FuzzDecodeBatch` fuzzes the batch decoder.
+Named tests in `internal/derive/derive_test.go`, `internal/proto/proto_test.go`, `internal/sim/sim_test.go`: non-batcher sender, garbage bytes, decompression bomb, future epoch, wrong version, zero or too many blocks, timestamp before the epoch / beyond the drift / not increasing, duplicate batches, invalid transactions inside a valid batch, wrong origin hash after the fork, L1 reorgs of random shape, derivation overriding the sequencer, batcher outage longer than the window, stuck batcher transaction, restart with no state, fork boundary with an un-upgraded node. `FuzzDecodeBatch` fuzzes the batch decoder. The configuration loader rejects unknown keys, so a misspelled `forkV2At` cannot silently leave the hard fork unscheduled on one node. Operational failures (L1 stalled, batcher unfunded, L1 reorgs) were provoked on a live stack and their alerts verified; see `docs/OBSERVABILITY.md`.
 
 ## Known limitations (accepted for a lab)
 
@@ -26,8 +26,9 @@ Named tests in `internal/derive/derive_test.go`, `internal/proto/proto_test.go`,
 - **L1 adapter** trusts the configured L1 node; a malicious L1 RPC could feed false data.
 - **Memory**: state trie nodes are never pruned; the derivator replays L1 on every restart.
 - **Deep reorgs**: deeper than `FinalityDepth + SeqWindow + 32` L1 blocks the derivation stops (`ErrDeepReorg`) and needs a resync.
-- Static analysis: Slither was not run for the Solidity contract (no Python in the build environment); the contract is 40 lines, fuzz-tested, and uses a custom-error, checks-effects pattern with no external calls.
-- Test coverage is uneven (see README): protocol packages 67–97 %, adapters covered by the demo only.
+- Static analysis: Slither runs in CI only (`crytic/slither-action`, `fail-on: low`, `--exclude-dependencies`, config `contracts/slither.config.json`); there is no Python on the development machine, so it has not been run locally. It reports no findings for `DepositPortal`. One detector is silenced inline with the reason next to the contract: `locked-ether`, because the portal has no withdrawals by design (see above). The contract is 40 lines, fuzz-tested, and uses custom errors and a checks-effects pattern with no external calls.
+- Test coverage: 88 % of the statements in `internal/` (per package in the README). The L1 adapter is tested against a real Anvil in CI, the RPC layer over HTTP; `cmd/rollup` is covered only by the demo.
+- **Batcher fees**: a stuck batch is replaced with a 25 % higher fee until `MaxGasPrice` (200 gwei by default); beyond that the `BatcherStuck` alert is the only reaction. After a long outage the batcher still publishes batches for epochs the derivation already resolved (wasted L1 gas, rejected as `stale_epoch`).
 
 ## Reporting
 
