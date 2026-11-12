@@ -3,6 +3,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -32,11 +33,18 @@ func Load(path string) (*proto.Config, error) {
 		return nil, err
 	}
 	var f file
-	if err := json.Unmarshal(raw, &f); err != nil {
+	// A misspelled key (say "forkv2At") would silently schedule nothing and split the network at the
+	// fork: refuse unknown fields.
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&f); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 	if f.ChainID == 0 {
 		return nil, fmt.Errorf("%s: chainId is required", path)
+	}
+	if f.L1Start == 0 {
+		return nil, fmt.Errorf("%s: l1Start must be >= 1 (the first L1 block the rollup reads)", path)
 	}
 	c := &proto.Config{
 		L1Start: f.L1Start, GenesisTime: f.GenesisTime, Inbox: f.Inbox, Batcher: f.Batcher, Portal: f.Portal,
