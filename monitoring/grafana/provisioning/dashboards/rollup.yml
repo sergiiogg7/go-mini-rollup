@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: go-mini-rollup
+    type: file
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards     # rewritten by scripts/observability-up.sh

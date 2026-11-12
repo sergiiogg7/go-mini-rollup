@@ -1,5 +1,7 @@
 package metrics
 
+import "sort"
+
 // Metric names. Every component reports through these constants so that the dashboard, the alert
 // rules and the code cannot drift apart silently (monitoring_test.go checks the files against
 // this list).
@@ -38,38 +40,51 @@ var RejectReasons = []string{"sender", "decode", "future_epoch", "stale_epoch", 
 // reported as "invalid" so that the label set stays bounded.
 var TxRejectReasons = []string{"known", "nonce_too_low", "nonce_gap", "insufficient_funds", "pool_full", "underpriced", "invalid"}
 
+var descriptions = map[string]string{
+	SafeHead:         "Latest L2 block derived from L1 (the canonical chain).",
+	FinalizedHead:    "Latest L2 block derived at an L1 block at least FinalityDepth behind the L1 cursor.",
+	UnsafeHead:       "Latest L2 block built by the sequencer (not yet confirmed by L1).",
+	L1Head:           "Latest L1 block number reported by the L1 node.",
+	L1Cursor:         "Last L1 block processed by the derivation.",
+	DerivationLag:    "L1 blocks the derivation is behind the L1 head.",
+	NextEpoch:        "Next epoch (L1 block) the derivation has to resolve.",
+	L1Reorgs:         "L1 reorgs handled by the derivation.",
+	L1ReorgDepth:     "Depth in L1 blocks of the last L1 reorg handled.",
+	UnsafeReorgs:     "Times the sequencer dropped unsafe blocks, by cause.",
+	BatchAccepted:    "Batches that passed the derivation rules.",
+	BatchRejected:    "Batches dropped by the derivation, by rule.",
+	FallbackEpochs:   "Epochs derived as an empty block because no valid batch arrived within SeqWindow.",
+	TxSkipped:        "Transactions skipped deterministically inside a block, by reason.",
+	TxRejected:       "Transactions refused by the sequencer pool, by reason.",
+	TxPoolSize:       "Transactions waiting in the sequencer pool.",
+	BlocksBuilt:      "Unsafe L2 blocks built by the sequencer, by kind.",
+	BlockBuild:       "Seconds the sequencer spends executing one block on the EVM.",
+	BatchSubmitted:   "Batch transactions sent to L1 by the batcher.",
+	BatcherInflight:  "Batches sent to L1 and not yet confirmed.",
+	BatcherOldestAge: "Seconds since the oldest unconfirmed batch was first sent (0 if none).",
+	BatcherNextEpoch: "Next epoch the batcher will publish.",
+	BatcherResubmit:  "Batches sent again, by cause.",
+	BatcherErrors:    "Batcher ticks that failed, by stage.",
+	LoopErrors:       "Failed iterations of the background loops (usually the L1 node being unreachable), by loop.",
+}
+
+// Names lists every metric the rollup exports, sorted.
+func Names() []string {
+	names := make([]string, 0, len(descriptions))
+	for n := range descriptions {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
+}
+
 // RegisterAll documents every metric and exports the counters at 0, so that rate() and
 // increase() see the first event and a dashboard shows 0 instead of "no data".
 func RegisterAll(r *Registry) {
-	for n, h := range map[string]string{
-		SafeHead:         "Latest L2 block derived from L1 (the canonical chain).",
-		FinalizedHead:    "Latest L2 block derived at an L1 block at least FinalityDepth behind the L1 cursor.",
-		UnsafeHead:       "Latest L2 block built by the sequencer (not yet confirmed by L1).",
-		L1Head:           "Latest L1 block number reported by the L1 node.",
-		L1Cursor:         "Last L1 block processed by the derivation.",
-		DerivationLag:    "L1 blocks the derivation is behind the L1 head.",
-		NextEpoch:        "Next epoch (L1 block) the derivation has to resolve.",
-		L1Reorgs:         "L1 reorgs handled by the derivation.",
-		L1ReorgDepth:     "Depth in L1 blocks of the last L1 reorg handled.",
-		UnsafeReorgs:     "Times the sequencer dropped unsafe blocks, by cause.",
-		BatchAccepted:    "Batches that passed the derivation rules.",
-		BatchRejected:    "Batches dropped by the derivation, by rule.",
-		FallbackEpochs:   "Epochs derived as an empty block because no valid batch arrived within SeqWindow.",
-		TxSkipped:        "Transactions skipped deterministically inside a block, by reason.",
-		TxRejected:       "Transactions refused by the sequencer pool, by reason.",
-		TxPoolSize:       "Transactions waiting in the sequencer pool.",
-		BlocksBuilt:      "Unsafe L2 blocks built by the sequencer, by kind.",
-		BlockBuild:       "Seconds the sequencer spends executing one block on the EVM.",
-		BatchSubmitted:   "Batch transactions sent to L1 by the batcher.",
-		BatcherInflight:  "Batches sent to L1 and not yet confirmed.",
-		BatcherOldestAge: "Seconds since the oldest unconfirmed batch was first sent (0 if none).",
-		BatcherNextEpoch: "Next epoch the batcher will publish.",
-		BatcherResubmit:  "Batches sent again, by cause.",
-		BatcherErrors:    "Batcher ticks that failed, by stage.",
-		LoopErrors:       "Failed iterations of the background loops (usually the L1 node being unreachable), by loop.",
-	} {
+	for n, h := range descriptions {
 		r.Describe(n, h)
 	}
+	r.Set(L1ReorgDepth, 0)
 	for _, c := range []string{L1Reorgs, BatchAccepted, FallbackEpochs, BatchSubmitted} {
 		r.Init(c)
 	}

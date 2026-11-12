@@ -1,0 +1,16 @@
+# Prometheus configuration for go-mini-rollup (the ports are the ones of scripts/demo.sh;
+# scripts/observability-up.sh rewrites them when L2_PORT / VER_PORT are set).
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+rule_files:
+  - alerts.yml
+
+scrape_configs:
+  - job_name: rollup-sequencer          # `rollup devnet`: sequencer + batcher + derivation
+    static_configs:
+      - targets: ["127.0.0.1:19545"]
+  - job_name: rollup-verifier           # `rollup verifier`: derivation only
+    static_configs:
+      - targets: ["127.0.0.1:19546"]

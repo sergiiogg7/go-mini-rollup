@@ -1,0 +1,75 @@
+# Alert rules. Thresholds assume the demo (1 s L1 blocks, SeqWindow 8 L1 blocks); on an L1 with
+# 12 s blocks scale the durations (see docs/OBSERVABILITY.md). Every metric is documented in
+# internal/metrics/catalog.go and checked against this file by a unit test.
+groups:
+  - name: rollup
+    rules:
+      - alert: RollupNodeDown
+        expr: up{job=~"rollup-.*"} == 0
+        for: 30s
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.job }} is not scraped"
+          description: "Prometheus cannot read /metrics of {{ $labels.instance }}: the process is down or unreachable."
+
+      - alert: SafeHeadStalled
+        # The derivation sees new L1 blocks but the canonical chain does not move. A silent batcher
+        # does not trigger this (the fallback keeps the safe head moving), a stuck derivation does.
+        expr: increase(rollup_safe_head[2m]) == 0 and increase(rollup_l1_head[2m]) > 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.job }}: the safe head has not moved in 3 minutes while L1 advances"
+          description: "Check the derivation loop errors (rollup_loop_errors_total{loop=\"derivation\"}) and the node log."
+
+      - alert: DerivationLagHigh
+        expr: rollup_derivation_lag_l1_blocks > 10
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.job }}: derivation is {{ $value }} L1 blocks behind the L1 head"
+          description: "Verifiers and the safe/finalized heads trail L1. Usually a slow or rate-limited L1 RPC, or a long catch-up after a restart (the derivator replays L1)."
+
+      - alert: BatcherStuck
+        # Batches were sent to L1 and none of the oldest ones has been included for a minute:
+        # L1 is not mining, the fee is too low even after bumps, or the nonce is wrong.
+        expr: rollup_batcher_inflight > 0 and rollup_batcher_oldest_inflight_seconds > 60
+        for: 30s
+        labels: { severity: critical }
+        annotations:
+          summary: "The batcher has had an unconfirmed batch for {{ $value }}s"
+          description: "Check L1 block production, the batcher fee (rollup_batcher_resubmitted_total{cause=\"fee_bump\"}) and its nonce."
+
+      - alert: BatcherErrors
+        expr: increase(rollup_batcher_errors_total[1m]) > 0
+        for: 30s
+        labels: { severity: warning }
+        annotations:
+          summary: "The batcher fails ({{ $labels.stage }})"
+          description: "Typical cause: the batcher account has no L1 funds or the L1 node rejects its transactions."
+
+      - alert: FallbackEpochsIncreasing
+        # An epoch was derived as an empty block: no valid batch arrived within SeqWindow. The chain
+        # is live (deposits still apply) but ordinary transactions are not being confirmed.
+        expr: increase(rollup_fallback_epochs_total[1m]) > 0
+        for: 30s
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.job }}: epochs are being derived as empty fallback blocks"
+          description: "The sequencer or the batcher is silent (or its batches are rejected: see rollup_batch_rejected_total by reason)."
+
+      - alert: ReorgSpike
+        expr: increase(rollup_l1_reorg_total[10m]) >= 2
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.job }}: {{ $value }} L1 reorgs in 10 minutes"
+          description: "Last depth: see rollup_l1_reorg_last_depth. Unconfirmed L2 state is being rolled back and the batcher re-sends batches."
+
+      - alert: L1Unreachable
+        # the batcher loop has its own alert (BatcherErrors); a funding problem is not an L1 outage
+        expr: sum by (job) (increase(rollup_loop_errors_total{loop=~"derivation|sequencer"}[1m])) > 5
+        for: 30s
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.job }}: the derivation or sequencer loop keeps failing"
+          description: "Almost always the L1 JSON-RPC endpoint being down or slow. See the node log."

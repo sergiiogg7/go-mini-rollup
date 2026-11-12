@@ -1,0 +1,111 @@
+{
+  "uid": "go-mini-rollup",
+  "title": "go-mini-rollup",
+  "tags": ["rollup", "go-mini-rollup"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "editable": false,
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+    { "id": 1, "type": "stat", "title": "Safe head", "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "rollup_safe_head{job=\"rollup-sequencer\"}", "legendFormat": "safe" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" } },
+    { "id": 2, "type": "stat", "title": "Finalized head", "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "rollup_finalized_head{job=\"rollup-sequencer\"}", "legendFormat": "finalized" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" } },
+    { "id": 3, "type": "stat", "title": "Unsafe head", "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "rollup_unsafe_head{job=\"rollup-sequencer\"}", "legendFormat": "unsafe" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" } },
+    { "id": 4, "type": "stat", "title": "L1 head", "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "rollup_l1_head{job=\"rollup-sequencer\"}", "legendFormat": "L1" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" } },
+    { "id": 5, "type": "stat", "title": "Derivation lag (L1 blocks)", "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "max(rollup_derivation_lag_l1_blocks)", "legendFormat": "lag" } ],
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 5 }, { "color": "red", "value": 10 } ] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" } },
+    { "id": 6, "type": "stat", "title": "Tx pool", "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "rollup_txpool_size{job=\"rollup-sequencer\"}", "legendFormat": "pending" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" } },
+
+    { "id": 7, "type": "timeseries", "title": "Heads (unsafe, safe, finalized, L1)", "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "rollup_unsafe_head{job=\"rollup-sequencer\"}", "legendFormat": "unsafe (sequencer)" },
+        { "refId": "B", "expr": "rollup_safe_head{job=\"rollup-sequencer\"}", "legendFormat": "safe (sequencer node)" },
+        { "refId": "C", "expr": "rollup_safe_head{job=\"rollup-verifier\"}", "legendFormat": "safe (verifier)" },
+        { "refId": "D", "expr": "rollup_finalized_head{job=\"rollup-sequencer\"}", "legendFormat": "finalized" },
+        { "refId": "E", "expr": "rollup_l1_head{job=\"rollup-sequencer\"}", "legendFormat": "L1 head" }
+      ] },
+    { "id": 8, "type": "timeseries", "title": "Derivation lag (L1 blocks behind the L1 head)", "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "rollup_derivation_lag_l1_blocks", "legendFormat": "{{job}}" } ] },
+
+    { "id": 9, "type": "timeseries", "title": "Batcher: in flight and age of the oldest unincluded batch", "gridPos": { "x": 0, "y": 12, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "rollup_batcher_inflight", "legendFormat": "batches in flight" },
+        { "refId": "B", "expr": "rollup_batcher_oldest_inflight_seconds", "legendFormat": "oldest unincluded (s)" }
+      ] },
+    { "id": 10, "type": "timeseries", "title": "Batcher: sends, resubmissions and errors (per minute)", "gridPos": { "x": 8, "y": 12, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "increase(rollup_batch_submitted_total[1m])", "legendFormat": "submitted" },
+        { "refId": "B", "expr": "sum by (cause) (increase(rollup_batcher_resubmitted_total[1m]))", "legendFormat": "resubmitted: {{cause}}" },
+        { "refId": "C", "expr": "sum by (stage) (increase(rollup_batcher_errors_total[1m]))", "legendFormat": "errors: {{stage}}" }
+      ] },
+    { "id": 11, "type": "timeseries", "title": "Batches accepted / rejected by reason (per minute)", "gridPos": { "x": 16, "y": 12, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "increase(rollup_batch_accepted_total[1m])", "legendFormat": "accepted ({{job}})" },
+        { "refId": "B", "expr": "sum by (job, reason) (increase(rollup_batch_rejected_total[1m]))", "legendFormat": "rejected: {{reason}} ({{job}})" }
+      ] },
+
+    { "id": 12, "type": "timeseries", "title": "Fallback epochs (empty blocks, per minute)", "gridPos": { "x": 0, "y": 20, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "increase(rollup_fallback_epochs_total[1m])", "legendFormat": "{{job}}" } ] },
+    { "id": 13, "type": "timeseries", "title": "Reorgs (per 5 minutes)", "gridPos": { "x": 8, "y": 20, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "increase(rollup_l1_reorg_total[5m])", "legendFormat": "L1 reorgs ({{job}})" },
+        { "refId": "B", "expr": "sum by (cause) (increase(rollup_unsafe_reorg_total[5m]))", "legendFormat": "unsafe reorgs: {{cause}}" },
+        { "refId": "C", "expr": "rollup_l1_reorg_last_depth", "legendFormat": "last L1 reorg depth ({{job}})" }
+      ] },
+    { "id": 14, "type": "timeseries", "title": "Block build time (sequencer, EVM execution)", "gridPos": { "x": 16, "y": 20, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.50, sum by (le) (rate(rollup_block_build_seconds_bucket[1m])))", "legendFormat": "p50" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(rollup_block_build_seconds_bucket[1m])))", "legendFormat": "p95" },
+        { "refId": "C", "expr": "histogram_quantile(0.99, sum by (le) (rate(rollup_block_build_seconds_bucket[1m])))", "legendFormat": "p99" }
+      ] },
+
+    { "id": 15, "type": "timeseries", "title": "Tx pool size and rejected / skipped transactions", "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "rollup_txpool_size", "legendFormat": "pool size" },
+        { "refId": "B", "expr": "sum by (reason) (increase(rollup_tx_rejected_total[1m]))", "legendFormat": "rejected by pool: {{reason}} (per min)" },
+        { "refId": "C", "expr": "sum by (job, reason) (increase(rollup_tx_skipped_total[1m]))", "legendFormat": "skipped in blocks: {{reason}} ({{job}}, per min)" }
+      ] },
+    { "id": 16, "type": "timeseries", "title": "Blocks built and loop errors (per minute)", "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (kind) (increase(rollup_blocks_built_total[1m]))", "legendFormat": "unsafe blocks: {{kind}}" },
+        { "refId": "B", "expr": "sum by (job, loop) (increase(rollup_loop_errors_total[1m]))", "legendFormat": "loop errors: {{loop}} ({{job}})" }
+      ] },
+
+    { "id": 17, "type": "table", "title": "Alerts (pending or firing, from Prometheus)", "gridPos": { "x": 0, "y": 36, "w": 24, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "ALERTS{alertstate=~\"firing|pending\"}", "instant": true, "format": "table" } ],
+      "transformations": [ { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "Value": true }, "indexByName": { "alertname": 0, "alertstate": 1, "severity": 2, "job": 3 } } } ] }
+  ]
+}

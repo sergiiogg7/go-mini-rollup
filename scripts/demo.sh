@@ -104,6 +104,6 @@ A=$(cast block "$HEAD" --field hash --rpc-url "$L2"); B=$(cast block "$HEAD" --f
 [ "$A" = "$B" ] && echo "After the reorg both nodes still agree on block $HEAD: $A"
 
 say "7. Metrics (Prometheus format)"
-curl -s "$L2/metrics" | grep -E 'rollup_(reorg|batch_accepted|batch_submitted|unsafe_reorg|safe_head|rollup_l1)' | head -12
+curl -s "$L2/metrics" | grep -E '^rollup_(l1_reorg|batch_accepted|batch_submitted|unsafe_reorg|safe_head|finalized_head|derivation_lag|fallback)' | head -14
 
 say "Done. $( [ "${KEEP:-0}" = 1 ] && echo "Everything keeps running: open $L2/ in a browser. Stop with: kill ${PIDS[*]}   (Windows: taskkill //PID <pid> //F)" || echo "Stopping everything." )"
