@@ -46,6 +46,16 @@ func (p *Pool) Len() int {
 	return len(p.byHash)
 }
 
+// Get returns a pending transaction, or nil.
+func (p *Pool) Get(h common.Hash) *gtypes.Transaction {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if e := p.byHash[h]; e != nil {
+		return e.tx
+	}
+	return nil
+}
+
 func (p *Pool) Has(h common.Hash) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()

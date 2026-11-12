@@ -51,7 +51,7 @@ func (c *SeqChain) Tx(h common.Hash) (*gtypes.Transaction, *proto.Block, int, bo
 	return l.Block.Txs[l.Index], l.Block, l.Index, true
 }
 
-func (c *SeqChain) Pending(h common.Hash) bool                     { return c.Seq.Pending(h) }
+func (c *SeqChain) PendingTx(h common.Hash) *gtypes.Transaction    { return c.Seq.PendingTx(h) }
 func (c *SeqChain) PendingNonce(a common.Address, n uint64) uint64 { return c.Seq.PoolNonce(a, n) }
 func (c *SeqChain) Submit(raw []byte) (common.Hash, error)         { return c.Seq.Submit(raw) }
 
@@ -106,7 +106,7 @@ func (c *VerifierChain) Tx(h common.Hash) (*gtypes.Transaction, *proto.Block, in
 	return b.Txs[i], b, i, true
 }
 
-func (c *VerifierChain) Pending(common.Hash) bool                       { return false }
+func (c *VerifierChain) PendingTx(common.Hash) *gtypes.Transaction      { return nil }
 func (c *VerifierChain) PendingNonce(_ common.Address, n uint64) uint64 { return n }
 func (c *VerifierChain) Submit([]byte) (common.Hash, error) {
 	return common.Hash{}, errors.New("read-only verifier node: send transactions to the sequencer")

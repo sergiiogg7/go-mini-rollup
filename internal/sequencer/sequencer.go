@@ -375,6 +375,9 @@ func (s *Sequencer) Tx(h common.Hash) (Loc, bool) {
 // Pending reports whether a transaction is waiting in the pool.
 func (s *Sequencer) Pending(h common.Hash) bool { return s.pool.Has(h) }
 
+// PendingTx returns a transaction that is waiting in the pool, or nil.
+func (s *Sequencer) PendingTx(h common.Hash) *gtypes.Transaction { return s.pool.Get(h) }
+
 // PendingNonce is the nonce a wallet should use next.
 func (s *Sequencer) PendingNonce(a common.Address) uint64 {
 	s.mu.RLock()

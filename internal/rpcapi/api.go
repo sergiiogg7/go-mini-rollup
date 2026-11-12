@@ -25,7 +25,7 @@ type Chain interface {
 	Resolve(tag rpc.BlockNumber) *proto.Block
 	ByHash(h common.Hash) *proto.Block
 	Tx(h common.Hash) (*gtypes.Transaction, *proto.Block, int, bool)
-	Pending(h common.Hash) bool
+	PendingTx(h common.Hash) *gtypes.Transaction // nil when the hash is not waiting in the pool
 	PendingNonce(a common.Address, stateNonce uint64) uint64
 	Submit(raw []byte) (common.Hash, error)
 	Status() map[string]any
@@ -262,6 +262,9 @@ func (a *EthAPI) GetBlockByHash(h common.Hash, full bool) map[string]any {
 func (a *EthAPI) GetTransactionByHash(h common.Hash) map[string]any {
 	if tx, b, i, ok := a.chain.Tx(h); ok {
 		return a.txJSON(tx, b, i)
+	}
+	if tx := a.chain.PendingTx(h); tx != nil {
+		return a.txJSON(tx, nil, 0) // blockHash, blockNumber and transactionIndex are null
 	}
 	return nil
 }
