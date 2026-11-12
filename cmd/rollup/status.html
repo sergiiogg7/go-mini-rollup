@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>go-mini-rollup status</title>
+<style>
+  :root { --bg:#0f1115; --fg:#e6e8ee; --muted:#8b93a7; --card:#181b22; --line:#262a35; --ok:#3ecf8e; --warn:#f5a524; --acc:#6ea8fe; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f6f7f9; --fg:#14161c; --muted:#5d6577; --card:#fff; --line:#dfe2ea; --ok:#13875a; --warn:#b26a00; --acc:#1f5fd1; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 4px; } p.sub { color: var(--muted); margin: 0 0 20px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .card .k { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .card .v { font-size:26px; font-variant-numeric: tabular-nums; margin-top:2px; }
+  .unsafe .v { color: var(--warn); } .safe .v { color: var(--acc); } .fin .v { color: var(--ok); }
+  h2 { font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:28px 0 8px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); font-variant-numeric: tabular-nums; }
+  th { color:var(--muted); font-weight:500; font-size:12px; } tr:last-child td { border-bottom:0; }
+  code { font:12px ui-monospace, monospace; } .tag { font-size:11px; padding:1px 7px; border-radius:999px; border:1px solid var(--line); }
+  .tag.s { color:var(--acc); } .tag.u { color:var(--warn); } .tag.f { color:var(--ok); }
+  #err { color: var(--warn); min-height: 1.4em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>go-mini-rollup <span id="role" class="tag"></span></h1>
+  <p class="sub">Unsafe = what the sequencer ordered. Safe = what was rebuilt from L1 alone. Finalized = safe and buried under enough L1 blocks.</p>
+  <div class="grid">
+    <div class="card unsafe"><div class="k">Unsafe head</div><div class="v" id="unsafe">–</div></div>
+    <div class="card safe"><div class="k">Safe head</div><div class="v" id="safe">–</div></div>
+    <div class="card fin"><div class="k">Finalized</div><div class="v" id="finalized">–</div></div>
+    <div class="card"><div class="k">L1 head</div><div class="v" id="l1Head">–</div></div>
+    <div class="card"><div class="k">Derivation lag (L1 blocks)</div><div class="v" id="derivationLagL1">–</div></div>
+    <div class="card"><div class="k">L1 reorgs handled</div><div class="v" id="l1Reorgs">–</div></div>
+    <div class="card"><div class="k">Unsafe reorgs</div><div class="v" id="unsafeReorgs">–</div></div>
+    <div class="card"><div class="k">Pending txs</div><div class="v" id="txpool">–</div></div>
+  </div>
+  <h2>Latest blocks</h2>
+  <table><thead><tr><th>#</th><th>Hash</th><th>L1 origin</th><th>Txs</th><th>Status</th></tr></thead><tbody id="blocks"></tbody></table>
+  <p id="err"></p>
+</main>
+<script>
+const rpc = (method, params = []) => fetch('/', { method: 'POST', headers: {'content-type':'application/json'},
+  body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) }).then(r => r.json()).then(j => { if (j.error) throw new Error(j.error.message); return j.result; });
+const $ = id => document.getElementById(id);
+async function tick() {
+  try {
+    const s = await rpc('rollup_syncStatus');
+    $('role').textContent = s.role;
+    for (const k of ['unsafe','safe','finalized','l1Head','derivationLagL1','l1Reorgs','unsafeReorgs','txpool']) $(k).textContent = s[k] ?? '–';
+    const rows = [];
+    for (let n = s.unsafe; n >= Math.max(0, s.unsafe - 9); n--) {
+      const b = await rpc('eth_getBlockByNumber', ['0x' + n.toString(16), false]);
+      if (!b) continue;
+      const st = n <= s.finalized ? ['finalized','f'] : n <= s.safe ? ['safe','s'] : ['unsafe','u'];
+      rows.push(`<tr><td>${n}</td><td><code>${b.hash.slice(0,18)}…</code></td><td>${parseInt(b.l1OriginNumber,16)}</td><td>${b.transactions.length}</td><td><span class="tag ${st[1]}">${st[0]}</span></td></tr>`);
+    }
+    $('blocks').innerHTML = rows.join('');
+    $('err').textContent = '';
+  } catch (e) { $('err').textContent = String(e.message || e); }
+}
+tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
