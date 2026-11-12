@@ -7,6 +7,10 @@ pragma solidity 0.8.28;
 /// (censorship-resistant) transaction: the sequencer cannot skip or reorder it.
 /// @dev Deliberately minimal and WITHOUT withdrawals: the locked ETH cannot leave. Withdrawals,
 /// proofs and challenges live in the `rollup-bridge` project. Not audited. Do not use with value.
+// Reason: locked-ether is the documented design of this lab contract. Deposits are mirrored on L2 and
+// the withdrawal path (proofs, challenge period) is out of scope here; it lives in the rollup-bridge
+// project. The limitation is stated in the contract natspec, in README.md and in SECURITY.md.
+// slither-disable-next-line locked-ether
 contract DepositPortal {
     /// @notice Emitted for every deposit. `depositId` is a global, gap-free counter.
     event Deposit(address indexed from, address indexed to, uint256 value, uint256 depositId);
