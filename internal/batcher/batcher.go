@@ -64,6 +64,7 @@ type Batcher struct {
 	Confirmations uint64 // blocks on top of the inclusion block before a batch stops counting as in flight
 	BumpAfter     int    // ticks without inclusion before replacing with a higher fee
 	Now           func() time.Time
+	MaxGasPrice   *big.Int // ceiling for fee bumps (default 200 gwei); nil disables the cap
 
 	started   bool
 	nextEpoch uint64
@@ -79,6 +80,7 @@ func New(cfg *proto.Config, src UnsafeSource, l1 derive.L1Source, sub L1Submitte
 	return &Batcher{
 		cfg: cfg, src: src, l1: l1, sub: sub, key: key, addr: crypto.PubkeyToAddress(key.PublicKey), m: m,
 		MaxInflight: 4, Confirmations: 1, BumpAfter: 5, Now: time.Now,
+		MaxGasPrice: new(big.Int).Mul(big.NewInt(200), big.NewInt(1_000_000_000)),
 	}
 }
 
@@ -221,10 +223,16 @@ func (b *Batcher) submit(d *proto.Draft) error {
 	return nil
 }
 
-func bump(p *big.Int) *big.Int {
+// bump raises a gas price by 25 % (the minimum most nodes accept for a replacement), never above
+// MaxGasPrice: without a cap, a batch stuck for minutes would compound the fee exponentially.
+func (b *Batcher) bump(p *big.Int) *big.Int {
 	np := new(big.Int).Mul(p, big.NewInt(125))
 	np.Div(np, big.NewInt(100))
-	return np.Add(np, big.NewInt(1))
+	np.Add(np, big.NewInt(1))
+	if b.MaxGasPrice != nil && np.Cmp(b.MaxGasPrice) > 0 {
+		np = new(big.Int).Set(b.MaxGasPrice)
+	}
+	return np
 }
 
 func (b *Batcher) allTracked() []*tracked {
@@ -261,7 +269,11 @@ func (b *Batcher) track(head uint64) error {
 	} else {
 		for _, t := range all {
 			if t.incl == nil && t.age >= b.BumpAfter {
-				t.gasPrice = bump(t.gasPrice)
+				np := b.bump(t.gasPrice)
+				if np.Cmp(t.gasPrice) <= 0 {
+					continue // already at the cap: resending the same transaction would be refused as known
+				}
+				t.gasPrice = np
 				if err := b.send(t); err != nil {
 					if !nonceError(err) {
 						return fmt.Errorf("fee bump of epoch %d failed: %w", t.epoch, err)
@@ -300,7 +312,7 @@ func (b *Batcher) rebase(all []*tracked) error {
 		if t.incl != nil {
 			continue
 		}
-		t.nonce, t.gasPrice = base, bump(t.gasPrice)
+		t.nonce, t.gasPrice = base, b.bump(t.gasPrice)
 		base++
 		if err := b.send(t); err != nil {
 			return fmt.Errorf("rebase of epoch %d failed: %w", t.epoch, err)

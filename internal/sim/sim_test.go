@@ -344,3 +344,20 @@ func TestBatcherReportsInflightAgeWhileL1DoesNotConfirm(t *testing.T) {
 	require.EqualValues(t, 0, n.reg.Get(metrics.BatcherOldestAge))
 	require.EqualValues(t, 0, n.reg.Get(metrics.BatcherInflight))
 }
+
+func TestFeeBumpsStopAtTheGasPriceCap(t *testing.T) {
+	n := newNode(t)
+	n.bat.MaxGasPrice = big.NewInt(1_500_000_000) // the fake L1 quotes 1 gwei: 1 -> 1.25 -> cap
+	n.rounds(2)
+	n.send(carol, eth)
+	n.l1.Mine(1)
+	_, _ = n.seq.Tick()
+	n.l1.Mine(1)
+	_, _ = n.seq.Tick()
+	for i := 0; i < 60; i++ { // L1 stops mining: the batches stay stuck
+		require.NoError(t, n.bat.Tick(), "no error once the cap is reached")
+	}
+	bumps := n.reg.Get(metrics.BatcherResubmit, "cause", "fee_bump")
+	require.Greater(t, bumps, float64(0))
+	require.LessOrEqual(t, bumps, float64(2*n.bat.MaxInflight), "bounded: each in-flight batch is bumped at most twice")
+}
